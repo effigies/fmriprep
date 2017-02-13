@@ -54,6 +54,8 @@ image(s), using the ANTs-extracted brain mask.
 This feature may be disabled with the ``--no-freesurfer`` flag.
 
 .. figure:: _static/reconall.svg
+    :height: 470.16px
+    :width: 1109.3px
     :scale: 100%
 
     Surface reconstruction (FreeSurfer)
