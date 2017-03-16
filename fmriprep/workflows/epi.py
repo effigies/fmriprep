@@ -384,6 +384,10 @@ def init_epi_reg_wf(reportlet_suffix, name='epi_reg_wf',
                 input_names=['fs_2_t1_transform', 'bbreg_transform'],
                 output_names=['out_file']),
             name='transformer')
+
+        # tkreg_inverter = pe.Node(
+        #     fs.Tkregister2(reg_header=True),
+        #     name='TKRegInverter')
     else:
         flt_bbr_init = pe.Node(
             FLIRTRPT(generate_report=True, dof=6),
@@ -516,6 +520,10 @@ def init_epi_reg_wf(reportlet_suffix, name='epi_reg_wf',
             (explicit_mask_epi, bbregister, [('out_file', 'source_file')]),
             (inputnode, transformer, [('fs_2_t1_transform', 'fs_2_t1_transform')]),
             (bbregister, transformer, [('out_fsl_file', 'bbreg_transform')]),
+            # (inputnode, tkreg_inverter, [('subjects_dir', 'subjects_dir'),
+            #                              ('subject_id', 'subject_id')]),
+            # (transformer, tkreg_inverter, [('out_file', 'fsl_in_matrix')],
+            # (explicit_mask_epi, tkreg_inverter, [('out_file', 'moving_image')]),
             (transformer, invt_bbr, [('out_file', 'in_file')]),
             (transformer, outputnode, [('out_file', 'mat_epi_to_t1')]),
             (transformer, fsl2itk_fwd, [('out_file', 'transform_file')]),
