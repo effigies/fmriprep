@@ -164,5 +164,57 @@ def _extract_wm(in_file):
                    image.get_header()).to_filename(out_file)
     return out_file
 
+
+# def normalize_giftis(in_files, pattern, description, giitype):
+#     """
+#     Rename a list of GIFTI files according to convention:
+#
+#         <description>.<hemi>.<type>.gii
+#
+#     where <hemi> is 'L' or 'R'
+#
+#     Parameters
+#     ----------
+#     in_files : list (or list of lists) of filenames
+#     pattern : str
+#         Regular expression capturing named references
+#             - hemi          (required)
+#             - description
+#             - type
+#         If no expression is provided, the following is used:
+#             r'^(?P<hemi>[lr])h.'
+#     description : str
+#         Description of file contents may be passed as a parameter
+#         rather than
+#
+#     """
+#     import os
+#     import re
+#     from nipype.utils.filemanip import copyfile
+#     from nipype.interfaces.base import isdefined
+#
+#     in_fmt = re.compile(pattern)
+#     if isinstance(in_files[0], list):
+#         in_files = sum(in_files, [])
+#     if not isdefined(pattern):
+#         pattern = r'^(?P<hemi>[lr])h.'
+#     base_info = {'type': giitype}
+#     info = {'description': description,
+#             'type': giitype}
+#
+#     out_files = []
+#     for in_file, description in zip(in_files):
+#         name = os.path.basename(in_file)
+#         matches = in_fmt.match(name).groupdict()
+#         matches['hemi'] = matches['hemi'].upper()   # L|R
+#         info.update(matches)
+#         out_file = os.path.abspath(
+#             '{description}.{hemi}.{type}.gii'.format(**info))
+#         copyfile(in_file, out_file)
+#         out_files.append(out_file)
+#
+#     return out_files
+
+
 if __name__ == '__main__':
     pass
