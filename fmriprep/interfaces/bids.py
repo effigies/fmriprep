@@ -38,6 +38,7 @@ from niworkflows.nipype.interfaces.base import (
     File, Directory, InputMultiPath, OutputMultiPath, Str,
     SimpleInterface
 )
+import nipype.interfaces.io as nio
 
 LOGGER = logging.getLogger('interface')
 BIDS_NAME = re.compile(
@@ -306,9 +307,12 @@ class ReadSidecarJSON(SimpleInterface):
         return runtime
 
 
-class BIDSFreeSurferDirInputSpec(BaseInterfaceInputSpec):
+class BIDSDerivativesInputSpec(BaseInterfaceInputSpec):
     derivatives = Directory(exists=True, mandatory=True,
                             desc='BIDS derivatives directory')
+
+
+class BIDSFreeSurferDirInputSpec(BIDSDerivativesInputSpec):
     freesurfer_home = Directory(exists=True, mandatory=True,
                                 desc='FreeSurfer installation directory')
     subjects_dir = traits.Str('freesurfer', usedefault=True,
@@ -319,8 +323,8 @@ class BIDSFreeSurferDirInputSpec(BaseInterfaceInputSpec):
 
 
 class BIDSFreeSurferDirOutputSpec(TraitedSpec):
-    subjects_dir = traits.Directory(exists=True,
-                                    desc='FreeSurfer subjects directory')
+    subjects_dir = Directory(exists=True,
+                             desc='FreeSurfer subjects directory')
 
 
 class BIDSFreeSurferDir(SimpleInterface):
@@ -357,6 +361,56 @@ class BIDSFreeSurferDir(SimpleInterface):
                 copytree(source, dest)
 
         return runtime
+
+
+class FMRIPrepSourceInputSpec(BIDSDerivativesInputSpec):
+    subject_label = traits.Str(
+        mandatory=True,
+        desc='Subject label (sub-<label>) for whom to retrieve data')
+
+
+class FMRIPrepSourceOutputSpec(TraitedSpec):
+    fmriprep_directory = Directory(
+        exists=True, desc='FMRIPREP subject output directory')
+    freesurfer_directory = Directory(
+        exists=True, desc='FMRIPREP subject-associated FreeSurfer directory')
+    t1_preproc = File(
+        exists=True, loc='anat', pattern='T1w_preproc.nii.gz',
+        desc='Bias-corrected T1w image')
+    t1_mask = File(
+        exists=True, loc='anat', pattern='T1w_brainmask.nii.gz',
+        desc='Binary T1w mask')
+    t1_dtissue = File(
+        exists=True, loc='anat', pattern='T1w_dtissue.nii.gz',
+        desc='T1w tissue class map')
+    surf_smoothwm = OutputMultiPath(
+        File(exists=True), loc='anat', pattern='T1w_smoothwm.?.surf.gii',
+        desc='Smoothed gray/white boundary surfaces')
+    surf_midthickness = OutputMultiPath(
+        File(exists=True), loc='anat', pattern='T1w_midthickness.?.surf.gii',
+        desc='Midthickness surfaces')
+    surf_pial = OutputMultiPath(
+        File(exists=True), loc='anat', pattern='T1w_pial.?.surf.gii',
+        desc='Pial surfaces')
+    surf_inflated = OutputMultiPath(
+        File(exists=True), loc='anat', pattern='T1w_inflated.?.surf.gii',
+        desc='Inflated surfaces')
+    t1_mni_warp = File(
+        exists=True, loc='anat', pattern='T1w_target-*_warp.h5',
+        desc='Normalization affine and non-linear warp')
+    mni_preproc = File(
+        exists=True, loc='anat', pattern='T1w_space-*_preproc.nii.gz',
+        desc='Normalized bias-corrected T1w image')
+    mni_mask = File(
+        exists=True, loc='anat', pattern='T1w_space-*_brainmask.nii.gz',
+        desc='Normalized binary T1w mask')
+    mni_dtissue = File(
+        exists=True, loc='anat', pattern='T1w_space-*_class-*_probtissue.nii.gz',
+        desc='Normalized probabilistic tissue class maps')
+
+
+class FMRIPrepSource(nio.IOBase):
+    pass
 
 
 def get_metadata_for_nifti(in_file):
