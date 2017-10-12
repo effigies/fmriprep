@@ -19,6 +19,7 @@ from niworkflows.nipype.utils.filemanip import fname_presuffix
 from niworkflows.nipype.interfaces.base import (
     traits, TraitedSpec, BaseInterfaceInputSpec, File, InputMultiPath, OutputMultiPath,
     SimpleInterface)
+from niworkflows.nipype.interfaces import c3, freesurfer as fs
 from niworkflows.nipype.interfaces.ants.resampling import ApplyTransformsInputSpec
 
 LOGGER = logging.getLogger('interface')
@@ -220,6 +221,38 @@ class FUGUEvsm2ANTSwarp(SimpleInterface):
             field.astype(np.dtype('<f4')), nii.affine, hdr).to_filename(
                 self._results['out_file'])
 
+        return runtime
+
+
+class LTA2ITKInputSpec(BaseInterfaceInputSpec):
+    in_lta = File(exists=True, mandatory=True, desc='Input LTA file')
+    source_file = File(exists=True, mandatory=True, desc='Source file of LTA transform')
+    reference_file = File(exists=True, mandatory=True,
+                          desc='Reference (target) file of LTA transform')
+    invert = traits.Bool(default=False, usedefault=True, desc='Invert transform')
+
+
+class LTA2ITKOutputSpec(TraitedSpec):
+    out_itk = File(exists=True, desc='Output ITK transform file')
+
+
+class LTA2ITK(SimpleInterface):
+    input_spec = LTA2ITKInputSpec
+    output_spec = LTA2ITKOutputSpec
+
+    def _run_interface(self, runtime):
+        source_file = self.inputs.source_file
+        reference_file = self.inputs.reference_file
+        if self.inputs.invert:
+            source_file, reference_file = reference_file, source_file
+
+        lta2fsl = fs.utils.LTAConvert(out_fsl=True, in_lta=self.inputs.in_lta,
+                                      invert=self.inputs.invert)
+        fsl2itk = c3.C3dAffineTool(fsl2ras=True, itk_transform=True,
+                                   source_file=source_file, reference_file=reference_file)
+        fsl2itk.inputs.transform_file = lta2fsl.run().outputs.out_fsl
+
+        self._results['out_itk'] = fsl2itk.run().outputs.itk_transform
         return runtime
 
 
