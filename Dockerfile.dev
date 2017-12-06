@@ -1,0 +1,6 @@
+FROM poldracklab/fmriprep:latest
+
+# Installing psutil for resource monitoring
+RUN conda install -y psutil;  sync &&\
+    conda clean --all -y; sync && \
+    conda clean -tipsy && sync
