@@ -5,18 +5,17 @@
 ---------------------
 Outputs of *fMRIPrep*
 ---------------------
-*fMRIPrep* outputs conform to the :abbr:`BIDS (brain imaging data structure)`
+*fMRIPrep* outputs conform to the :abbr:`BIDS (Brain Imaging Data Structure)`
 Derivatives specification (see `BIDS Derivatives RC1`_).
 *fMRIPrep* generates three broad classes of outcomes:
 
 1. **Visual QA (quality assessment) reports**:
-   one :abbr:`HTML (hypertext markup language)` per subject,
-   that allows the user a thorough visual assessment of the quality
+   one :abbr:`HTML (hypertext markup language)` report per subject,
+   that provides the user a thorough visual assessment of the quality
    of processing and ensures the transparency of *fMRIPrep* operation.
 
-2. **Derivatives (preprocessed data)** the input fMRI data ready for
-   analysis, i.e., after the various preparation procedures
-   have been applied.
+2. **Derivatives (preprocessed data)**: the anatomical and functional data
+   prepared for analysis.
    For example, :abbr:`INU (intensity non-uniformity)`-corrected versions
    of the T1-weighted image (per subject), the brain mask,
    or :abbr:`BOLD (blood-oxygen level dependent)`
@@ -117,14 +116,17 @@ sampled to those subject spaces.
 Functional derivatives
 ~~~~~~~~~~~~~~~~~~~~~~
 Functional derivatives are stored in the ``func/`` subfolder.
-All derivatives contain ``task-<task_label>`` (mandatory) and ``run-<run_index>`` (optional), and
-these will be indicated with ``[specifiers]``::
+For datasets with sessions, this will be nested inside the ``ses-<session_label>/`` subfolder.
+All derivative filenames contain ``task-<task_label>`` (mandatory) and ``run-<run_index>``
+(optional), as well as ``ses-<session_label>``, if applicable.
+These will be indicated with ``[specifiers]``.
 
   sub-<subject_label>/
-    func/
-      sub-<subject_label>_[specifiers]_space-<space_label>_boldref.nii.gz
-      sub-<subject_label>_[specifiers]_space-<space_label>_desc-brain_mask.nii.gz
-      sub-<subject_label>_[specifiers]_space-<space_label>_desc-preproc_bold.nii.gz
+    [ses-<session_label>/]
+      func/
+        sub-<subject_label>_[specifiers]_space-<space_label>_boldref.nii.gz
+        sub-<subject_label>_[specifiers]_space-<space_label>_desc-brain_mask.nii.gz
+        sub-<subject_label>_[specifiers]_space-<space_label>_desc-preproc_bold.nii.gz
 
 **Regularly gridded outputs (images)**.
 Volumetric output spaces labels (``<space_label>`` above, and in the following) include
@@ -148,12 +150,12 @@ Surface output spaces include ``fsnative`` (full density subject-specific mesh),
 in precise geographic correspondence, with varying mesh densities: 32k (default), 59k, and 164k.
 
 **Grayordinates files**.
-CIFTI is a container format that holds both volumetric (regularly sampled in a grid)
+CIFTI-2 is a container format that holds both volumetric (regularly sampled in a grid)
 and surface (sampled on a triangular mesh) samples.
 Sub-cortical time series are volumetric (supported spaces: ``MNI152NLin6Asym``), while cortical
 time series are sampled to surface (supported spaces: ``fsLR``).
 If CIFTI outputs are requested (with the ``--cifti-outputs`` argument), the BOLD series are also
-saved as ``dtseries.nii`` CIFTI2 files::
+saved as ``dtseries.nii`` CIFTI-2 files::
 
   sub-<subject_label>/
     func/
@@ -212,15 +214,15 @@ There is currently no consensus on an optimal denoising strategy in the fMRI com
 Rather, different strategies have been proposed, which achieve different compromises between
 how much of the non-neuronal fluctuations are effectively removed, and how much of neuronal fluctuations
 are damaged in the process.
-The *fMRIPrep* pipeline generates a large array of possible confounds.
 
 The most well established confounding variables in neuroimaging are the six head-motion parameters
 (three rotations and three translations) - the common output of the head-motion correction
 (also known as *realignment*) of popular fMRI preprocessing software
 such as SPM_ or FSL_.
-Beyond the standard head-motion parameters, the fMRIPrep pipeline generates a large array
+Beyond the standard head-motion parameters, the *fMRIPrep* pipeline generates a large array
 of possible confounds, which enable researchers to choose the most suitable denoising
 strategy for their downstream analyses.
+*fMRIPrep* **does not** perform any denoising on the `~desc-preproc_bold.nii.gz` files.
 
 Confounding variables calculated in *fMRIPrep* are stored separately for each subject,
 session and run in :abbr:`TSV (tab-separated value)` files - one column for each confound variable.
@@ -269,6 +271,8 @@ Derivatives and quadratic terms are stored under column names with
 suffixes: ``_derivative1`` and powers ``_power2``.
 These are calculated for head-motion estimates (``trans_`` and ``rot_``) and global signals
 (``white_matter``, ``csf``, and ``global_signal``).
+Note that these suffixes are **not** conformant with the BIDS Derivatives draft, and
+are subject to change (`issue 1864 <https://github.com/poldracklab/fmriprep/issues/1864>`__).
 
 **Outlier detection**.
 These confounds can be used to detect potential outlier time points -
