@@ -1162,6 +1162,21 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         run_without_submitting=True,
     )
 
+    # TODO: Check direction of transform, figure out name for "fmap" space
+    ds_coeff_xfms = pe.Node(
+        DerivativesDataSink(
+            base_directory=fmriprep_dir,
+            to="bold",
+            datatype="func",
+            suffix="xfm",
+            extension=".txt",
+            dismiss_entities=("echo",),
+            **{"from": "fmap"},
+        ),
+        name="ds_coeff_xfms",
+        run_without_submitting=True,
+    )
+
     # fmt:off
     workflow.connect([
         (inputnode, output_select, [("fmap", "fmap"),
@@ -1191,7 +1206,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             ("outputnode.bold_mask", "wm_seg")]),
         (inputnode, ds_report_sdc, [("bold_file", "source_file")]),
         (sdc_report, ds_report_sdc, [("out_report", "in_file")]),
-
+        (coeff2epi, ds_coeff_xfm, [("transforms", "in_file")]),
     ])
     # fmt:on
 
