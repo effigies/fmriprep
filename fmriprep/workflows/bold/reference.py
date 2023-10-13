@@ -126,7 +126,6 @@ using a custom methodology of *fMRIPrep*, for use in head motion correction.
         mem_gb=DEFAULT_MEMORY_MIN_GB,
     )
 
-    # fmt: off
     workflow.connect([
         (inputnode, val_bold, [("bold_file", "in_file")]),
         (inputnode, get_dummy, [("bold_file", "in_file")]),
@@ -141,7 +140,6 @@ using a custom methodology of *fMRIPrep*, for use in head motion correction.
         (calc_dummy_scans, outputnode, [("skip_vols_num", "skip_vols")]),
         (gen_avg, outputnode, [("out_file", "boldref")]),
         (get_dummy, outputnode, [("n_dummy", "algo_dummy_scans")]),
-    ])
-    # fmt: on
+    ])  # fmt:skip
 
     return workflow

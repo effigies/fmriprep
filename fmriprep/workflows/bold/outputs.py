@@ -269,7 +269,6 @@ def init_func_fit_reports_wf(
         mem_gb=1,
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, ds_summary, [
             ('source_file', 'source_file'),
@@ -290,8 +289,7 @@ def init_func_fit_reports_wf(
             ('boldref2anat_xfm', 'transforms'),
         ]),
         (t1w_wm, boldref_wm, [('out', 'input_image')]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     # Reportlets follow the structure of init_bold_fit_wf stages
     # - SDC1:
@@ -362,7 +360,6 @@ def init_func_fit_reports_wf(
             name="ds_sdc_report",
         )
 
-        # fmt:off
         workflow.connect([
             (inputnode, fmapref_boldref, [
                 ('fmap_ref', 'input_image'),
@@ -383,8 +380,7 @@ def init_func_fit_reports_wf(
             (boldref_wm, sdc_report, [('output_image', 'wm_seg')]),
             (inputnode, ds_sdc_report, [('source_file', 'source_file')]),
             (sdc_report, ds_sdc_report, [('out_report', 'in_file')]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     # EPI-T1 registration
     # Resample T1w image onto EPI-space
@@ -410,15 +406,13 @@ def init_func_fit_reports_wf(
         name="ds_epi_t1_report",
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, epi_t1_report, [('coreg_boldref', 'after')]),
         (t1w_boldref, epi_t1_report, [('output_image', 'before')]),
         (boldref_wm, epi_t1_report, [('output_image', 'wm_seg')]),
         (inputnode, ds_epi_t1_report, [('source_file', 'source_file')]),
         (epi_t1_report, ds_epi_t1_report, [('out_report', 'in_file')]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     return workflow
 
@@ -453,15 +447,13 @@ def init_ds_boldref_wf(
         run_without_submitting=True,
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, raw_sources, [('source_files', 'in_files')]),
         (inputnode, ds_boldref, [('boldref', 'in_file'),
                                  ('source_files', 'source_file')]),
         (raw_sources, ds_boldref, [('out', 'RawSources')]),
         (ds_boldref, outputnode, [('out_file', 'boldref')]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     return workflow
 
@@ -499,15 +491,13 @@ def init_ds_registration_wf(
         mem_gb=DEFAULT_MEMORY_MIN_GB,
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, raw_sources, [('source_files', 'in_files')]),
         (inputnode, ds_xform, [('xform', 'in_file'),
                                ('source_files', 'source_file')]),
         (raw_sources, ds_xform, [('out', 'RawSources')]),
         (ds_xform, outputnode, [('out_file', 'xform')]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     return workflow
 
@@ -543,15 +533,13 @@ def init_ds_hmc_wf(
         run_without_submitting=True,
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, raw_sources, [('source_files', 'in_files')]),
         (inputnode, ds_xforms, [('xforms', 'in_file'),
                                 ('source_files', 'source_file')]),
         (raw_sources, ds_xforms, [('out', 'RawSources')]),
         (ds_xforms, outputnode, [('out_file', 'xforms')]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     return workflow
 
@@ -828,7 +816,6 @@ def init_func_derivatives_wf(
         name='ds_t1w_tpl_inv_xfm',
         run_without_submitting=True,
     )
-    # fmt:off
     workflow.connect([
         (inputnode, raw_sources, [('all_source_files', 'in_files')]),
         (inputnode, ds_confounds, [('source_file', 'source_file'),
@@ -838,8 +825,7 @@ def init_func_derivatives_wf(
                                      ('bold2anat_xfm', 'in_file')]),
         (inputnode, ds_ref_t1w_inv_xfm, [('source_file', 'source_file'),
                                          ('anat2bold_xfm', 'in_file')]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     # Output HMC and reference volume
     ds_bold_hmc_xfm = pe.Node(
@@ -866,14 +852,12 @@ def init_func_derivatives_wf(
         mem_gb=DEFAULT_MEMORY_MIN_GB,
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, ds_bold_hmc_xfm, [('source_file', 'source_file'),
                                       ('hmc_xforms', 'in_file')]),
         (inputnode, ds_bold_native_ref, [('source_file', 'source_file'),
                                          ('bold_native_ref', 'in_file')])
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     # Resample to T1w space
     if nonstd_spaces.intersection(('T1w', 'anat')):
@@ -916,7 +900,6 @@ def init_func_derivatives_wf(
             run_without_submitting=True,
             mem_gb=DEFAULT_MEMORY_MIN_GB,
         )
-        # fmt:off
         workflow.connect([
             (inputnode, ds_bold_t1, [('source_file', 'source_file'),
                                      ('bold_t1', 'in_file')]),
@@ -925,8 +908,7 @@ def init_func_derivatives_wf(
             (inputnode, ds_bold_mask_t1, [('source_file', 'source_file'),
                                           ('bold_mask_t1', 'in_file')]),
             (raw_sources, ds_bold_mask_t1, [('out', 'RawSources')]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
         if freesurfer:
             ds_bold_aseg_t1 = pe.Node(
                 DerivativesDataSink(
@@ -954,14 +936,12 @@ def init_func_derivatives_wf(
                 run_without_submitting=True,
                 mem_gb=DEFAULT_MEMORY_MIN_GB,
             )
-            # fmt:off
             workflow.connect([
                 (inputnode, ds_bold_aseg_t1, [('source_file', 'source_file'),
                                               ('bold_aseg_t1', 'in_file')]),
                 (inputnode, ds_bold_aparc_t1, [('source_file', 'source_file'),
                                                ('bold_aparc_t1', 'in_file')]),
-            ])
-            # fmt:on
+            ])  # fmt:skip
         if multiecho:
             ds_t2star_t1 = pe.Node(
                 DerivativesDataSink(
@@ -976,13 +956,11 @@ def init_func_derivatives_wf(
                 run_without_submitting=True,
                 mem_gb=DEFAULT_MEMORY_MIN_GB,
             )
-            # fmt:off
             workflow.connect([
                 (inputnode, ds_t2star_t1, [('source_file', 'source_file'),
                                            ('t2star_t1', 'in_file')]),
                 (raw_sources, ds_t2star_t1, [('out', 'RawSources')]),
-            ])
-            # fmt:on
+            ])  # fmt:skip
 
     if getattr(spaces, '_cached') is None:
         return workflow
@@ -1043,7 +1021,6 @@ def init_func_derivatives_wf(
             run_without_submitting=True,
             mem_gb=DEFAULT_MEMORY_MIN_GB,
         )
-        # fmt:off
         workflow.connect([
             (inputnode, ds_bold_std, [('source_file', 'source_file')]),
             (inputnode, ds_bold_std_ref, [('source_file', 'source_file')]),
@@ -1071,8 +1048,7 @@ def init_func_derivatives_wf(
                                              ('resolution', 'resolution'),
                                              ('density', 'density')]),
             (raw_sources, ds_bold_mask_std, [('out', 'RawSources')]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
         if freesurfer:
             select_fs_std = pe.Node(
                 KeySelect(fields=['bold_aseg_std', 'bold_aparc_std', 'template']),
@@ -1104,7 +1080,6 @@ def init_func_derivatives_wf(
                 run_without_submitting=True,
                 mem_gb=DEFAULT_MEMORY_MIN_GB,
             )
-            # fmt:off
             workflow.connect([
                 (spacesource, select_fs_std, [('uid', 'key')]),
                 (inputnode, select_fs_std, [('bold_aseg_std', 'bold_aseg_std'),
@@ -1123,8 +1098,7 @@ def init_func_derivatives_wf(
                                                   ('density', 'density')]),
                 (inputnode, ds_bold_aseg_std, [('source_file', 'source_file')]),
                 (inputnode, ds_bold_aparc_std, [('source_file', 'source_file')])
-            ])
-            # fmt:on
+            ])  # fmt:skip
         if multiecho:
             ds_t2star_std = pe.Node(
                 DerivativesDataSink(
@@ -1138,7 +1112,6 @@ def init_func_derivatives_wf(
                 run_without_submitting=True,
                 mem_gb=DEFAULT_MEMORY_MIN_GB,
             )
-            # fmt:off
             workflow.connect([
                 (inputnode, ds_t2star_std, [('source_file', 'source_file')]),
                 (select_std, ds_t2star_std, [('t2star_std', 'in_file')]),
@@ -1147,8 +1120,7 @@ def init_func_derivatives_wf(
                                               ('resolution', 'resolution'),
                                               ('density', 'density')]),
                 (raw_sources, ds_t2star_std, [('out', 'RawSources')]),
-            ])
-            # fmt:on
+            ])  # fmt:skip
 
     fs_outputs = spaces.cached.get_fs_spaces()
     if freesurfer and fs_outputs:
@@ -1182,7 +1154,6 @@ def init_func_derivatives_wf(
             run_without_submitting=True,
             mem_gb=DEFAULT_MEMORY_MIN_GB,
         )
-        # fmt:off
         workflow.connect([
             (inputnode, select_fs_surf, [
                 ('surf_files', 'surfaces'),
@@ -1192,8 +1163,7 @@ def init_func_derivatives_wf(
             (select_fs_surf, ds_bold_surfs, [('surfaces', 'in_file'),
                                              ('key', 'space')]),
             (name_surfs, ds_bold_surfs, [('hemi', 'hemi')]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     if freesurfer and project_goodvoxels:
         ds_goodvoxels_mask = pe.Node(
@@ -1210,14 +1180,12 @@ def init_func_derivatives_wf(
             run_without_submitting=True,
             mem_gb=DEFAULT_MEMORY_MIN_GB,
         )
-        # fmt:off
         workflow.connect([
             (inputnode, ds_goodvoxels_mask, [
                 ('source_file', 'source_file'),
                 ('goodvoxels_mask', 'in_file'),
             ]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     # CIFTI output
     if cifti_output:
@@ -1234,14 +1202,12 @@ def init_func_derivatives_wf(
             run_without_submitting=True,
             mem_gb=DEFAULT_MEMORY_MIN_GB,
         )
-        # fmt:off
         workflow.connect([
             (inputnode, ds_bold_cifti, [(('bold_cifti', _unlist), 'in_file'),
                                         ('source_file', 'source_file'),
                                         ('cifti_density', 'density'),
                                         (('cifti_metadata', _read_json), 'meta_dict')])
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     if "compcor" in config.execution.debug:
         ds_acompcor_masks = pe.Node(
@@ -1261,14 +1227,12 @@ def init_func_derivatives_wf(
             name="ds_tcompcor_mask",
             run_without_submitting=True,
         )
-        # fmt:off
         workflow.connect([
             (inputnode, ds_acompcor_masks, [("acompcor_masks", "in_file"),
                                             ("source_file", "source_file")]),
             (inputnode, ds_tcompcor_mask, [("tcompcor_mask", "in_file"),
                                            ("source_file", "source_file")]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     return workflow
 
@@ -1339,7 +1303,6 @@ def init_bold_preproc_report_wf(
         mem_gb=DEFAULT_MEMORY_MIN_GB,
         run_without_submitting=True,
     )
-    # fmt:off
     workflow.connect([
         (inputnode, ds_report_bold, [('name_source', 'source_file')]),
         (inputnode, pre_tsnr, [('in_pre', 'in_file')]),
@@ -1347,8 +1310,7 @@ def init_bold_preproc_report_wf(
         (pre_tsnr, bold_rpt, [('stddev_file', 'before')]),
         (pos_tsnr, bold_rpt, [('stddev_file', 'after')]),
         (bold_rpt, ds_report_bold, [('out_report', 'in_file')]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     return workflow
 

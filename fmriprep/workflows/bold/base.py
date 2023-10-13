@@ -940,14 +940,12 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             name="boldmask_to_t1w",
             mem_gb=0.1,
         )
-        # fmt:off
         workflow.connect([
             (bold_reg_wf, boldmask_to_t1w, [("outputnode.itk_bold_to_t1", "transforms")]),
             (bold_t1_trans_wf, boldmask_to_t1w, [("outputnode.bold_mask_t1", "reference_image")]),
             (bold_final, boldmask_to_t1w, [("mask", "input_image")]),
             (boldmask_to_t1w, outputnode, [("output_image", "bold_mask_t1")]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
         if multiecho:
             t2star_to_t1w = pe.Node(
@@ -955,7 +953,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 name="t2star_to_t1w",
                 mem_gb=0.1,
             )
-            # fmt:off
             workflow.connect([
                 (bold_reg_wf, t2star_to_t1w, [("outputnode.itk_bold_to_t1", "transforms")]),
                 (bold_t1_trans_wf, t2star_to_t1w, [
@@ -963,8 +960,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 ]),
                 (bold_final, t2star_to_t1w, [("t2star", "input_image")]),
                 (t2star_to_t1w, outputnode, [("output_image", "t2star_t1")]),
-            ])
-            # fmt:on
+            ])  # fmt:skip
 
     if spaces.get_spaces(nonstandard=False, dim=(3,)):
         # Apply transforms in 1 shot
@@ -979,7 +975,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         )
         bold_std_trans_wf.inputs.inputnode.fieldwarp = "identity"
 
-        # fmt:off
         workflow.connect([
             (inputnode, bold_std_trans_wf, [
                 ("template", "inputnode.templates"),
@@ -1000,11 +995,9 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 ("outputnode.bold_std_ref", "bold_std_ref"),
                 ("outputnode.bold_mask_std", "bold_mask_std"),
             ]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
         if freesurfer:
-            # fmt:off
             workflow.connect([
                 (bold_std_trans_wf, func_derivatives_wf, [
                     ("outputnode.bold_aseg_std", "inputnode.bold_aseg_std"),
@@ -1014,30 +1007,24 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                     ("outputnode.bold_aseg_std", "bold_aseg_std"),
                     ("outputnode.bold_aparc_std", "bold_aparc_std"),
                 ]),
-            ])
-            # fmt:on
+            ])  # fmt:skip
 
         if not multiecho:
-            # fmt:off
             workflow.connect([
                 (bold_split, bold_std_trans_wf, [("out_files", "inputnode.bold_split")]),
                 (bold_hmc_wf, bold_std_trans_wf, [
                     ("outputnode.xforms", "inputnode.hmc_xforms"),
                 ]),
-            ])
-            # fmt:on
+            ])  # fmt:skip
         else:
-            # fmt:off
             workflow.connect([
                 (split_opt_comb, bold_std_trans_wf, [("out_files", "inputnode.bold_split")]),
                 (bold_std_trans_wf, outputnode, [("outputnode.t2star_std", "t2star_std")]),
-            ])
-            # fmt:on
+            ])  # fmt:skip
 
             # Already applied in bold_bold_trans_wf, which inputs to bold_t2s_wf
             bold_std_trans_wf.inputs.inputnode.hmc_xforms = "identity"
 
-        # fmt:off
         # func_derivatives_wf internally parametrizes over snapshotted spaces.
         workflow.connect([
             (bold_std_trans_wf, func_derivatives_wf, [
@@ -1047,8 +1034,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 ("outputnode.bold_std", "inputnode.bold_std"),
                 ("outputnode.bold_mask_std", "inputnode.bold_mask_std"),
             ]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     # SURFACES ##################################################################################
     # Freesurfer
@@ -1060,7 +1046,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             medial_surface_nan=config.workflow.medial_surface_nan,
             name="bold_surf_wf",
         )
-        # fmt:off
         workflow.connect([
             (inputnode, bold_surf_wf, [
                 ("subjects_dir", "inputnode.subjects_dir"),
@@ -1070,8 +1055,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             (bold_t1_trans_wf, bold_surf_wf, [("outputnode.bold_t1", "inputnode.source_file")]),
             (bold_surf_wf, outputnode, [("outputnode.surfaces", "surfaces")]),
             (bold_surf_wf, func_derivatives_wf, [("outputnode.target", "inputnode.surf_refs")]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     # CIFTI output
     if config.workflow.cifti_output:
@@ -1090,7 +1074,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             repetition_time=metadata["RepetitionTime"],
         )
 
-        # fmt:off
         workflow.connect([
             (inputnode, bold_fsLR_resampling_wf, [
                 ("surfaces", "inputnode.surfaces"),
@@ -1118,8 +1101,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 ("outputnode.cifti_bold", "bold_cifti"),
                 ("outputnode.cifti_metadata", "cifti_metadata"),
             ]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     if spaces.get_spaces(nonstandard=False, dim=(3,)):
         carpetplot_wf = init_carpetplot_wf(
@@ -1137,16 +1119,13 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         )
 
         if config.workflow.cifti_output:
-            # fmt:off
             workflow.connect(
                 bold_grayords_wf, "outputnode.cifti_bold", carpetplot_wf, "inputnode.cifti_bold",
-            )
-            # fmt:on
+            )  # fmt:skip
 
         def _last(inlist):
             return inlist[-1]
 
-        # fmt:off
         workflow.connect([
             (initial_boldref_wf, carpetplot_wf, [
                 ("outputnode.skip_vols", "inputnode.dummy_scans"),
@@ -1168,8 +1147,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 ("outputnode.crown_mask", "inputnode.crown_mask"),
                 (("outputnode.acompcor_masks", _last), "inputnode.acompcor_mask"),
             ]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     # REPORTING ############################################################
     ds_report_summary = pe.Node(
@@ -1186,12 +1164,10 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         mem_gb=config.DEFAULT_MEMORY_MIN_GB,
     )
 
-    # fmt:off
     workflow.connect([
         (summary, ds_report_summary, [("out_report", "in_file")]),
         (initial_boldref_wf, ds_report_validation, [("outputnode.validation_report", "in_file")]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     # Fill-in datasinks of reportlets seen so far
     for node in workflow.list_node_names():
@@ -1213,7 +1189,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         )
         bold_bold_trans_wf.inputs.inputnode.fieldwarp = "identity"
 
-        # fmt:off
         workflow.connect([
             # Connect bold_bold_trans_wf
             (bold_source, bold_bold_trans_wf, [("out", "inputnode.name_source")]),
@@ -1221,7 +1196,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             (bold_hmc_wf, bold_bold_trans_wf, [
                 ("outputnode.xforms", "inputnode.hmc_xforms"),
             ]),
-        ])
+        ])  # fmt:skip
 
         workflow.connect([
             (bold_bold_trans_wf, bold_final, [("outputnode.bold", "bold")]),
@@ -1238,8 +1213,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             (join_echos, final_boldref_wf, [
                 ("bold_files", "inputnode.bold_file"),
             ]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
         return workflow
 
     from niworkflows.interfaces.utility import KeySelect
@@ -1293,7 +1267,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         run_without_submitting=True,
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, output_select, [("fmap", "fmap"),
                                     ("fmap_ref", "fmap_ref"),
@@ -1326,8 +1299,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         (inputnode, ds_report_sdc, [("bold_file", "source_file")]),
         (sdc_report, ds_report_sdc, [("out_report", "in_file")]),
 
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     if "fieldmaps" in config.execution.debug:
         # Generate additional reportlets to assess SDC
@@ -1369,7 +1341,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
             run_without_submitting=True,
         )
 
-        # fmt:off
         workflow.connect([
             (initial_boldref_wf, sdc_coreg_report, [
                 ("outputnode.ref_image", "before"),
@@ -1392,11 +1363,9 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
 
             (fmap_report, ds_fmap_report, [("out_report", "in_file")]),
             (inputnode, ds_fmap_report, [("bold_file", "source_file")]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     if not multiecho:
-        # fmt:off
         workflow.connect([
             (unwarp_wf, bold_final, [("outputnode.corrected", "bold")]),
             # remaining workflow connections
@@ -1411,8 +1380,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 # TEMPORARY: For the moment we can't use frame-wise fieldmaps
                 (("outputnode.fieldwarp_ref", pop_file), "inputnode.fieldwarp"),
             ]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
         return workflow
 
     # Finalize connections if ME-EPI
@@ -1440,7 +1408,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
     def _dpop(list_of_lists):
         return list_of_lists[0][0]
 
-    # fmt:off
     workflow.connect([
         (unwarp_wf, join_echos, [
             ("outputnode.corrected", "bold_files"),
@@ -1459,8 +1426,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         (join_sdc_echos, bold_t2s_wf, [
             (("corrected_mask", pop_file), "inputnode.bold_mask"),
         ]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     return workflow
 

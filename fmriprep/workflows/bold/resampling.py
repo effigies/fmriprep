@@ -183,7 +183,6 @@ The BOLD time-series were resampled onto the following surfaces
         name="outputnode",
     )
 
-    # fmt: off
     workflow.connect([
         (inputnode, get_fsnative, [
             ("subject_id", "subject_id"),
@@ -211,8 +210,7 @@ The BOLD time-series were resampled onto the following surfaces
             ("surfaces", "surfaces"),
             ("target", "target"),
         ]),
-    ])
-    # fmt: on
+    ])  # fmt:skip
 
     # Refine if medial vertices should be NaNs
     medial_nans = pe.MapNode(
@@ -220,13 +218,11 @@ The BOLD time-series were resampled onto the following surfaces
     )
 
     if medial_surface_nan:
-        # fmt: off
         workflow.connect([
             (inputnode, medial_nans, [("subjects_dir", "subjects_dir")]),
             (sampler, medial_nans, [("out_file", "in_file")]),
             (medial_nans, update_metadata, [("out_file", "in_file")]),
-        ])
-        # fmt: on
+        ])  # fmt:skip
     else:
         workflow.connect([(sampler, update_metadata, [("out_file", "in_file")])])
 
@@ -684,7 +680,6 @@ The BOLD time-series were resampled onto the left/right-symmetric template
     # ... line 89
     mask_fsLR = pe.Node(MetricMask(), name="mask_fsLR")
 
-    # fmt: off
     workflow.connect([
         (inputnode, select_surfaces, [
             ('surfaces', 'surfaces'),
@@ -734,8 +729,7 @@ The BOLD time-series were resampled onto the left/right-symmetric template
         (joinnode, outputnode, [('bold_fsLR', 'bold_fsLR')]),
         (volume_to_surface, joinnode, [('weights_text_file', 'weights_text')]),
         (joinnode, outputnode, [('weights_text', 'weights_text')]),
-    ])
-    # fmt: on
+    ])  # fmt:skip
 
     if estimate_goodvoxels:
         workflow.__desc__ += """\
@@ -745,7 +739,6 @@ excluding voxels whose time-series have a locally high coefficient of variation.
 
         goodvoxels_bold_mask_wf = init_goodvoxels_bold_mask_wf(mem_gb)
 
-        # fmt: off
         workflow.connect([
             (inputnode, goodvoxels_bold_mask_wf, [
                 ("bold_file", "inputnode.bold_file"),
@@ -757,8 +750,7 @@ excluding voxels whose time-series have a locally high coefficient of variation.
             (goodvoxels_bold_mask_wf, outputnode, [
                 ("outputnode.goodvoxels_mask", "goodvoxels_mask"),
             ]),
-        ])
-        # fmt: on
+        ])  # fmt:skip
 
     return workflow
 
@@ -991,7 +983,6 @@ preprocessed BOLD runs*: {tpl}.
 
     # Generate a reference on the target standard space
     gen_final_ref = init_bold_reference_wf(omp_nthreads=omp_nthreads, pre_mask=True)
-    # fmt:off
     workflow.connect([
         (iterablesource, split_target, [("std_target", "in_target")]),
         (iterablesource, select_tpl, [("std_target", "template")]),
@@ -1018,8 +1009,7 @@ preprocessed BOLD runs*: {tpl}.
         (bold_to_std_transform, threshold, [("out_files", "in_file")]),
         (threshold, merge, [("out_file", "in_files")]),
         (merge, gen_final_ref, [("out_file", "inputnode.bold_file")]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     output_names = [
         "bold_mask_std",
@@ -1034,7 +1024,6 @@ preprocessed BOLD runs*: {tpl}.
         output_names.append("t2star_std")
 
     poutputnode = pe.Node(niu.IdentityInterface(fields=output_names), name="poutputnode")
-    # fmt:off
     workflow.connect([
         # Connecting outputnode
         (iterablesource, poutputnode, [
@@ -1043,8 +1032,7 @@ preprocessed BOLD runs*: {tpl}.
         (gen_final_ref, poutputnode, [("outputnode.ref_image", "bold_std_ref")]),
         (mask_std_tfm, poutputnode, [("output_image", "bold_mask_std")]),
         (select_std, poutputnode, [("key", "template")]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
 
     if freesurfer:
         # Sample the parcellation files to functional space
@@ -1054,7 +1042,6 @@ preprocessed BOLD runs*: {tpl}.
         aparc_std_tfm = pe.Node(
             ApplyTransforms(interpolation="MultiLabel"), name="aparc_std_tfm", mem_gb=1
         )
-        # fmt:off
         workflow.connect([
             (inputnode, aseg_std_tfm, [("bold_aseg", "input_image")]),
             (inputnode, aparc_std_tfm, [("bold_aparc", "input_image")]),
@@ -1064,8 +1051,7 @@ preprocessed BOLD runs*: {tpl}.
             (gen_ref, aparc_std_tfm, [("out_file", "reference_image")]),
             (aseg_std_tfm, poutputnode, [("output_image", "bold_aseg_std")]),
             (aparc_std_tfm, poutputnode, [("output_image", "bold_aparc_std")]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     if multiecho:
         t2star_std_tfm = pe.Node(
@@ -1073,14 +1059,12 @@ preprocessed BOLD runs*: {tpl}.
             name="t2star_std_tfm",
             mem_gb=1,
         )
-        # fmt:off
         workflow.connect([
             (inputnode, t2star_std_tfm, [("t2star", "input_image")]),
             (select_std, t2star_std_tfm, [("anat2std_xfm", "transforms")]),
             (gen_ref, t2star_std_tfm, [("out_file", "reference_image")]),
             (t2star_std_tfm, poutputnode, [("output_image", "t2star_std")]),
-        ])
-        # fmt:on
+        ])  # fmt:skip
 
     # Connect parametric outputs to a Join outputnode
     outputnode = pe.JoinNode(
@@ -1088,11 +1072,9 @@ preprocessed BOLD runs*: {tpl}.
         name="outputnode",
         joinsource="iterablesource",
     )
-    # fmt:off
     workflow.connect([
         (poutputnode, outputnode, [(f, f) for f in output_names]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
     return workflow
 
 
@@ -1205,7 +1187,6 @@ the transforms to correct for head-motion"""
 
     merge = pe.Node(Merge(compress=use_compression), name="merge", mem_gb=mem_gb * 3)
 
-    # fmt:off
     workflow.connect([
         (inputnode, merge_xforms, [("fieldwarp", "in1"),
                                    ("hmc_xforms", "in2")]),
@@ -1216,8 +1197,7 @@ the transforms to correct for head-motion"""
         (bold_transform, threshold, [("out_files", "in_file")]),
         (threshold, merge, [("out_file", "in_files")]),
         (merge, outputnode, [("out_file", "bold")]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
     return workflow
 
 
@@ -1318,7 +1298,6 @@ data transformed to {mni_density} mm resolution MNI152NLin6Asym space.
         name="gen_cifti",
     )
 
-    # fmt:off
     workflow.connect([
         (inputnode, select_std, [("bold_std", "bold_std"),
                                  ("spatial_reference", "keys")]),
@@ -1326,8 +1305,7 @@ data transformed to {mni_density} mm resolution MNI152NLin6Asym space.
         (select_std, gen_cifti, [("bold_std", "bold_file")]),
         (gen_cifti, outputnode, [("out_file", "cifti_bold"),
                                  ("out_metadata", "cifti_metadata")]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
     return workflow
 
 

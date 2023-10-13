@@ -491,7 +491,6 @@ the edge of the brain, as proposed by [@patriat_improved_2017].
             if not col.startswith(("a_comp_cor_", "t_comp_cor_", "std_dvars"))
         ]
 
-    # fmt:off
     workflow.connect([
         # connect inputnode to each non-anatomical confound node
         (inputnode, dvars, [("bold", "in_file"),
@@ -589,8 +588,7 @@ the edge of the brain, as proposed by [@patriat_improved_2017].
         (concat, conf_corr_plot, [("confounds_file", "confounds_file"),
                                   (("confounds_file", _select_cols), "columns")]),
         (conf_corr_plot, ds_report_conf_corr, [("out_file", "in_file")]),
-    ])
-    # fmt: on
+    ])  # fmt:skip
 
     return workflow
 
@@ -718,7 +716,6 @@ def init_carpetplot_wf(
     if cifti_output:
         workflow.connect(inputnode, "cifti_bold", conf_plot, "in_cifti")
 
-    # fmt:off
     workflow.connect([
         (inputnode, mrg_xfms, [("t1_bold_xform", "in1"),
                                ("std2anat_xfm", "in2")]),
@@ -733,8 +730,7 @@ def init_carpetplot_wf(
         (parcels, conf_plot, [("out", "in_segm")]),
         (conf_plot, ds_report_bold_conf, [("out_file", "in_file")]),
         (conf_plot, outputnode, [("out_file", "out_carpetplot")]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
     return workflow
 
 
