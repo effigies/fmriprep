@@ -42,6 +42,7 @@ from ...interfaces.resampling import (
     ReconstructFieldmap,
     ResampleSeries,
 )
+from ...interfaces.workbench import VolumeToSurfaceMapping
 from ...utils.bids import extract_entities
 from ...utils.misc import estimate_bold_mem_usage
 
@@ -55,6 +56,7 @@ from .outputs import (
 )
 from .reference import init_raw_boldref_wf
 from .registration import init_bold_reg_wf
+from .resampling import init_goodvoxels_bold_mask_wf
 from .stc import init_bold_stc_wf
 from .t2s import init_bold_t2s_wf
 
@@ -867,6 +869,63 @@ def init_bold_native_wf(
             (inputnode, outputnode, [("motion_xfm", "motion_xfm")]),
             (boldbuffer, outputnode, [("bold_file", "bold_minimal")]),
             (boldref_bold, outputnode, [("out_file", "bold_native")]),
+        ])  # fmt:skip
+
+    return workflow
+
+
+def init_vol2surf_fit_wf(
+    *,
+    filter_goodvoxels: bool,
+    mem_gb: float,
+    omp_nthreads: int = 1,
+    name='vol2surf_fit_wf',
+):
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['bold_file', 'ribbon_mask', 'white', 'pial', 'midthickness'],
+        ),
+        name="inputnode",
+    )
+
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=['goodvoxels_mask', 'sampling_weights']),
+        name="outputnode",
+    )
+
+    volume_to_surface = pe.MapNode(
+        VolumeToSurfaceMapping(
+            method="ribbon-constrained",
+            output_weights_text="output_weights.txt",
+        ),
+        iterfield=['surface_file', 'inner_surface', 'outer_surface'],
+        name="volume_to_surface",
+        n_procs=omp_nthreads,
+    )
+
+    workflow.connect([
+        (inputnode, volume_to_surface, [
+            ('midthickness', 'surface_file'),
+            ('white', 'inner_surface'),
+            ('pial', 'outer_surface'),
+            ('ribbon_mask', 'volume_file'),
+        ]),
+        (volume_to_surface, outputnode, [('weights_text_file', 'sampling_weights')]),
+    ])  # fmt:skip
+
+    if filter_goodvoxels:
+        goodvoxels_bold_mask_wf = init_goodvoxels_bold_mask_wf(mem_gb)
+
+        workflow.connect([
+            (inputnode, goodvoxels_bold_mask_wf, [
+                ('bold_file', 'inputnode.bold_file'),
+                ('ribbon_mask', 'inputnode.anat_ribbon'),
+            ]),
+            (goodvoxels_bold_mask_wf, outputnode, [
+                ('outputnode.goodvoxels_mask', 'goodvoxels_mask'),
+            ]),
         ])  # fmt:skip
 
     return workflow

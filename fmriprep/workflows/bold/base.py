@@ -47,7 +47,7 @@ from ...utils.meepi import combine_meepi_source
 # BOLD workflows
 from .apply import init_bold_volumetric_resample_wf
 from .confounds import init_bold_confs_wf, init_carpetplot_wf
-from .fit import init_bold_fit_wf, init_bold_native_wf
+from .fit import init_bold_fit_wf, init_bold_native_wf, init_vol2surf_fit_wf
 from .hmc import init_bold_hmc_wf
 from .outputs import (
     init_ds_bold_native_wf,
@@ -188,9 +188,14 @@ def init_bold_wf(
                 "t1w_preproc",
                 "t1w_mask",
                 "t1w_dseg",
+                # FreeSurfer outputs
                 "subjects_dir",
                 "subject_id",
                 "fsnative2t1w_xfm",
+                "white",
+                "midthickness",
+                "pial",
+                "anat_ribbon",
                 # Fieldmap registration
                 "fmap",
                 "fmap_ref",
@@ -351,6 +356,23 @@ def init_bold_wf(
             ]),
             (t2s_reporting_wf, ds_report_t2scomp, [('outputnode.t2s_comp_report', 'in_file')]),
             (t2s_reporting_wf, ds_report_t2star_hist, [("outputnode.t2star_hist", "in_file")]),
+        ])  # fmt:skip
+
+    if config.workflow.run_reconall:
+        vol2surf_fit_wf = init_vol2surf_fit_wf(
+            filter_goodvoxels=config.workflow.project_goodvoxels,
+            omp_nthreads=omp_nthreads,
+            mem_gb=mem_gb['filesize'],
+        )
+
+        workflow.connect([
+            (inputnode, vol2surf_fit_wf, [
+                ('midthickness', 'inputnode.midthickness'),
+                ('white', 'inputnode.white'),
+                ('pial', 'inputnode.pial'),
+                ('anat_ribbon', 'inputnode.ribbon_mask'),
+            ]),
+            (bold_anat_wf, vol2surf_fit_wf, [('outputnode.bold_file', 'inputnode.bold_file')]),
         ])  # fmt:skip
 
     if config.workflow.level == "resampling":
@@ -532,7 +554,6 @@ def init_func_preproc_wf(bold_file, has_fieldmap=False):
     spaces = config.workflow.spaces
     fmriprep_dir = str(config.execution.fmriprep_dir)
     freesurfer_spaces = spaces.get_fs_spaces()
-    project_goodvoxels = config.workflow.project_goodvoxels and config.workflow.cifti_output
 
     ref_file = bold_file
     wf_name = _get_wf_name(ref_file, "func_preproc")
