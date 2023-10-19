@@ -365,6 +365,14 @@ def init_bold_wf(
             mem_gb=mem_gb['filesize'],
         )
 
+        ds_sampling_weights_wf = init_ds_registration_wf(
+            bids_root=str(config.execution.bids_dir),
+            output_dir=fmriprep_dir,
+            source='T1w',
+            dest='fsnative',
+            name='ds_sampling_weights_wf',
+        )
+
         workflow.connect([
             (inputnode, vol2surf_fit_wf, [
                 ('midthickness', 'inputnode.midthickness'),
@@ -373,6 +381,9 @@ def init_bold_wf(
                 ('anat_ribbon', 'inputnode.ribbon_mask'),
             ]),
             (bold_anat_wf, vol2surf_fit_wf, [('outputnode.bold_file', 'inputnode.bold_file')]),
+            (vol2surf_fit_wf, ds_sampling_weights_wf, [
+                ('outputnode.sampling_weights', 'inputnode.xform'),
+            ]),
         ])  # fmt:skip
 
     if config.workflow.level == "resampling":
