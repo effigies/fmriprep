@@ -372,6 +372,7 @@ def init_bold_wf(
             dest='fsnative',
             name='ds_sampling_weights_wf',
         )
+        ds_sampling_weights_wf.inputs.inputnode.source_files = bold_series
 
         workflow.connect([
             (inputnode, vol2surf_fit_wf, [
