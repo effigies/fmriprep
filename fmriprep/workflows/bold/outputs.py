@@ -473,6 +473,7 @@ def init_ds_registration_wf(
     source: str,
     dest: str,
     name: str,
+    hemi: list[str] | None = None,
 ) -> pe.Workflow:
     workflow = pe.Workflow(name=name)
 
@@ -498,6 +499,8 @@ def init_ds_registration_wf(
         run_without_submitting=True,
         mem_gb=DEFAULT_MEMORY_MIN_GB,
     )
+    if hemi:
+        ds_xform.inputs.hemi = hemi
 
     # fmt:off
     workflow.connect([

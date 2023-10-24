@@ -370,6 +370,7 @@ def init_bold_wf(
             output_dir=fmriprep_dir,
             source='T1w',
             dest='fsnative',
+            hemi=['L', 'R'],
             name='ds_sampling_weights_wf',
         )
         ds_sampling_weights_wf.inputs.inputnode.source_files = bold_series
