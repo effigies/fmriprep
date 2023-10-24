@@ -359,34 +359,38 @@ def init_bold_wf(
         ])  # fmt:skip
 
     if config.workflow.run_reconall:
-        vol2surf_fit_wf = init_vol2surf_fit_wf(
-            filter_goodvoxels=config.workflow.project_goodvoxels,
-            omp_nthreads=omp_nthreads,
-            mem_gb=mem_gb['filesize'],
-        )
+        ## Reenable after discussion about sampling weights
+        ## This approach creates weights for the original T1w grid, but we probably want
+        ## the boldref grid instead. Right now these are very large (100MB/hemi/bold).
+        # vol2surf_fit_wf = init_vol2surf_fit_wf(
+        #     filter_goodvoxels=config.workflow.project_goodvoxels,
+        #     omp_nthreads=omp_nthreads,
+        #     mem_gb=mem_gb['filesize'],
+        # )
 
-        ds_sampling_weights_wf = init_ds_registration_wf(
-            bids_root=str(config.execution.bids_dir),
-            output_dir=fmriprep_dir,
-            source='T1w',
-            dest='fsnative',
-            hemi=['L', 'R'],
-            name='ds_sampling_weights_wf',
-        )
-        ds_sampling_weights_wf.inputs.inputnode.source_files = bold_series
+        # ds_sampling_weights_wf = init_ds_registration_wf(
+        #     bids_root=str(config.execution.bids_dir),
+        #     output_dir=fmriprep_dir,
+        #     source='T1w',
+        #     dest='fsnative',
+        #     hemi=['L', 'R'],
+        #     name='ds_sampling_weights_wf',
+        # )
+        # ds_sampling_weights_wf.inputs.inputnode.source_files = bold_series
 
-        workflow.connect([
-            (inputnode, vol2surf_fit_wf, [
-                ('midthickness', 'inputnode.midthickness'),
-                ('white', 'inputnode.white'),
-                ('pial', 'inputnode.pial'),
-                ('anat_ribbon', 'inputnode.ribbon_mask'),
-            ]),
-            (bold_anat_wf, vol2surf_fit_wf, [('outputnode.bold_file', 'inputnode.bold_file')]),
-            (vol2surf_fit_wf, ds_sampling_weights_wf, [
-                ('outputnode.sampling_weights', 'inputnode.xform'),
-            ]),
-        ])  # fmt:skip
+        # workflow.connect([
+        #     (inputnode, vol2surf_fit_wf, [
+        #         ('midthickness', 'inputnode.midthickness'),
+        #         ('white', 'inputnode.white'),
+        #         ('pial', 'inputnode.pial'),
+        #         ('anat_ribbon', 'inputnode.ribbon_mask'),
+        #     ]),
+        #     (bold_anat_wf, vol2surf_fit_wf, [('outputnode.bold_file', 'inputnode.bold_file')]),
+        #     (vol2surf_fit_wf, ds_sampling_weights_wf, [
+        #         ('outputnode.sampling_weights', 'inputnode.xform'),
+        #     ]),
+        # ])  # fmt:skip
+        pass
 
     if config.workflow.level == "resampling":
         return workflow
