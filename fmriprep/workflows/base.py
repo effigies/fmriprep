@@ -334,6 +334,7 @@ It is released under the [CC0]\
 
     # Set up the template iterator once, if used
     template_iterator_wf = None
+    select_MNI2009c_xfm = None
     if config.workflow.level == "full":
         if spaces.cached.get_spaces(nonstandard=False, dim=(3,)):
             template_iterator_wf = init_template_iterator_wf(spaces=spaces)
@@ -341,6 +342,19 @@ It is released under the [CC0]\
                 (anat_fit_wf, template_iterator_wf, [
                     ('outputnode.template', 'inputnode.template'),
                     ('outputnode.anat2std_xfm', 'inputnode.anat2std_xfm'),
+                ]),
+            ])  # fmt:skip
+
+        if 'MNI152NLin2009cAsym' in spaces.get_spaces():
+            select_MNI2009c_xfm = pe.Node(
+                KeySelect(fields=["std2anat_xfm"], key="MNI152NLin2009cAsym"),
+                name="select_MNI2009c_xfm",
+                run_without_submitting=True,
+            )
+            workflow.connect([
+                (anat_fit_wf, select_MNI2009c_xfm, [
+                    ("outputnode.std2anat_xfm", "std2anat_xfm"),
+                    ("outputnode.template", "keys"),
                 ]),
             ])  # fmt:skip
 
@@ -566,6 +580,13 @@ tasks and sessions), the following preprocessing was performed.
                         ("outputnode.cohort", "inputnode.std_cohort"),
                         ("outputnode.std_t1w", "inputnode.std_t1w"),
                         ("outputnode.std_mask", "inputnode.std_mask"),
+                    ]),
+                ])  # fmt:skip
+
+            if select_MNI2009c_xfm is not None:
+                workflow.connect([
+                    (select_MNI2009c_xfm, bold_wf, [
+                        ("std2anat_xfm", "inputnode.mni2009c2anat_xfm"),
                     ]),
                 ])  # fmt:skip
 

@@ -217,6 +217,8 @@ def init_bold_wf(
                 # MNI152NLin6Asym warp, for CIFTI use
                 "anat2mni6_xfm",
                 "mni6_mask",
+                # MNI152NLin2009cAsym inverse warp, for carpetplotting
+                "mni2009c2anat_xfm",
             ],
         ),
         name="inputnode",
@@ -598,6 +600,41 @@ def init_bold_wf(
         ]),
     ])  # fmt:skip
 
+    if spaces.get_spaces(nonstandard=False, dim=(3,)):
+        carpetplot_wf = init_carpetplot_wf(
+            mem_gb=mem_gb["resampled"],
+            metadata=all_metadata[0],
+            cifti_output=config.workflow.cifti_output,
+            name="carpetplot_wf",
+        )
+
+        if config.workflow.cifti_output:
+            workflow.connect(
+                bold_grayords_wf, "outputnode.cifti_bold", carpetplot_wf, "inputnode.cifti_bold",
+            )  # fmt:skip
+
+        def _last(inlist):
+            return inlist[-1]
+
+        workflow.connect([
+            (inputnode, carpetplot_wf, [
+                ("mni2009c2anat_xfm", "inputnode.std2anat_xfm"),
+            ]),
+            (bold_fit_wf, carpetplot_wf, [
+                ("outputnode.dummy_scans", "inputnode.dummy_scans"),
+                ("outputnode.bold_mask", "inputnode.bold_mask"),
+                ('outputnode.boldref2anat_xfm', 'inputnode.boldref2anat_xfm'),
+            ]),
+            (bold_native_wf, carpetplot_wf, [
+                ("outputnode.bold_native", "inputnode.bold"),
+            ]),
+            (bold_confounds_wf, carpetplot_wf, [
+                ("outputnode.confounds_file", "inputnode.confounds_file"),
+                ("outputnode.crown_mask", "inputnode.crown_mask"),
+                (("outputnode.acompcor_masks", _last), "inputnode.acompcor_mask"),
+            ]),
+        ])  # fmt:skip
+
     # Fill-in datasinks of reportlets seen so far
     for node in workflow.list_node_names():
         if node.split(".")[-1].startswith("ds_report"):
@@ -836,56 +873,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
     # SURFACES ##################################################################################
 
     # CIFTI output
-
-    if spaces.get_spaces(nonstandard=False, dim=(3,)):
-        carpetplot_wf = init_carpetplot_wf(
-            mem_gb=mem_gb["resampled"],
-            metadata=metadata,
-            cifti_output=config.workflow.cifti_output,
-            name="carpetplot_wf",
-        )
-
-        # Xform to "MNI152NLin2009cAsym" is always computed.
-        carpetplot_select_std = pe.Node(
-            KeySelect(fields=["std2anat_xfm"], key="MNI152NLin2009cAsym"),
-            name="carpetplot_select_std",
-            run_without_submitting=True,
-        )
-
-        if config.workflow.cifti_output:
-            # fmt:off
-            workflow.connect(
-                bold_grayords_wf, "outputnode.cifti_bold", carpetplot_wf, "inputnode.cifti_bold",
-            )
-            # fmt:on
-
-        def _last(inlist):
-            return inlist[-1]
-
-        # fmt:off
-        workflow.connect([
-            (initial_boldref_wf, carpetplot_wf, [
-                ("outputnode.skip_vols", "inputnode.dummy_scans"),
-            ]),
-            (inputnode, carpetplot_select_std, [("std2anat_xfm", "std2anat_xfm"),
-                                                ("template", "keys")]),
-            (carpetplot_select_std, carpetplot_wf, [
-                ("std2anat_xfm", "inputnode.std2anat_xfm"),
-            ]),
-            (bold_final, carpetplot_wf, [
-                ("bold", "inputnode.bold"),
-                ("mask", "inputnode.bold_mask"),
-            ]),
-            (bold_reg_wf, carpetplot_wf, [
-                ("outputnode.itk_t1_to_bold", "inputnode.t1_bold_xform"),
-            ]),
-            (bold_confounds_wf, carpetplot_wf, [
-                ("outputnode.confounds_file", "inputnode.confounds_file"),
-                ("outputnode.crown_mask", "inputnode.crown_mask"),
-                (("outputnode.acompcor_masks", _last), "inputnode.acompcor_mask"),
-            ]),
-        ])
-        # fmt:on
 
     # REPORTING ############################################################
     ds_report_summary = pe.Node(

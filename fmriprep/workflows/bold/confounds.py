@@ -719,23 +719,25 @@ def init_carpetplot_wf(
     if cifti_output:
         workflow.connect(inputnode, "cifti_bold", conf_plot, "in_cifti")
 
-    # fmt:off
     workflow.connect([
-        (inputnode, mrg_xfms, [("boldref2anat_xfm", "in1"),
-                               ("std2anat_xfm", "in2")]),
+        (inputnode, mrg_xfms, [
+            ("boldref2anat_xfm", "in1"),
+            ("std2anat_xfm", "in2"),
+        ]),
         (inputnode, resample_parc, [("bold_mask", "reference_image")]),
         (inputnode, parcels, [("crown_mask", "crown_mask")]),
         (inputnode, parcels, [("acompcor_mask", "acompcor_mask")]),
-        (inputnode, conf_plot, [("bold", "in_nifti"),
-                                ("confounds_file", "confounds_file"),
-                                ("dummy_scans", "drop_trs")]),
+        (inputnode, conf_plot, [
+            ("bold", "in_nifti"),
+            ("confounds_file", "confounds_file"),
+            ("dummy_scans", "drop_trs"),
+        ]),
         (mrg_xfms, resample_parc, [("out", "transforms")]),
         (resample_parc, parcels, [("output_image", "segmentation")]),
         (parcels, conf_plot, [("out", "in_segm")]),
         (conf_plot, ds_report_bold_conf, [("out_file", "in_file")]),
         (conf_plot, outputnode, [("out_file", "out_carpetplot")]),
-    ])
-    # fmt:on
+    ])  # fmt:skip
     return workflow
 
 
