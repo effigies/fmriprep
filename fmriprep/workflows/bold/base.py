@@ -181,6 +181,14 @@ def init_bold_wf(
             )
 
     workflow = Workflow(name=_get_wf_name(bold_file, "bold"))
+    workflow.__postdesc__ = """\
+All resamplings can be performed with *a single interpolation
+step* by composing all the pertinent transformations (i.e. head-motion
+transform matrices, susceptibility distortion correction when available,
+and co-registrations to anatomical and output spaces).
+Gridded (volumetric) resamplings were performed using `nitransforms`,
+configured with cubic B-spline interpolation.
+"""
 
     inputnode = pe.Node(
         niu.IdentityInterface(
@@ -456,6 +464,10 @@ def init_bold_wf(
         ])  # fmt:skip
 
     if config.workflow.run_reconall and freesurfer_spaces:
+        workflow.__postdesc__ += """\
+Non-gridded (surface) resamplings were performed using `mri_vol2surf`
+(FreeSurfer).
+"""
         config.loggers.workflow.debug("Creating BOLD surface-sampling workflow.")
         bold_surf_wf = init_bold_surf_wf(
             mem_gb=mem_gb["resampled"],

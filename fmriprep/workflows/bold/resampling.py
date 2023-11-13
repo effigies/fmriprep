@@ -583,7 +583,7 @@ def init_bold_fsLR_resampling_wf(
 
     workflow.__desc__ = """\
 The BOLD time-series were resampled onto the left/right-symmetric template
-"fsLR" [@hcppipelines].
+"fsLR" using the Connectome Workbench [@hcppipelines].
 """
 
     inputnode = pe.Node(
