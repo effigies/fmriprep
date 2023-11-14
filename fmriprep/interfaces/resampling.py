@@ -549,14 +549,14 @@ def resample_image(
     ras2vox = np.linalg.inv(vox2ras)
     # Transform RAS2RAS head motion transforms to VOX2VOX
     if hmc is not None:
-        hmc_xfms = [ras2vox @ xfm.matrix @ vox2ras for xfm in transforms[-1]]
+        hmc_xfms = [ras2vox @ xfm.matrix @ vox2ras for xfm in transform_list]
     else:
         hmc_xfms = None
 
-    # Remove the head-motion transforms and add a mapping from boldref
+    # After removing the head-motion transforms, add a mapping from boldref
     # world space to voxels. This new transform maps from world coordinates
     # in the target space to voxel coordinates in the source space.
-    ref2vox = nt.TransformChain(transforms[:-1] + [nt.Affine(ras2vox)])
+    ref2vox = nt.TransformChain(transform_list + [nt.Affine(ras2vox)])
     mapped_coordinates = ref2vox.map(coordinates)
 
     # Some identities to reduce special casing downstream
