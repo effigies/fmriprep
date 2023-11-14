@@ -110,14 +110,26 @@ def init_bold_wf(
     t1w_dseg
         Segmentation of preprocessed structural image, including
         gray-matter (GM), white-matter (WM) and cerebrospinal fluid (CSF)
-    anat2std_xfm
-        List of transform files, collated with templates
+    t1w_tpms
+        List of tissue probability maps in T1w space
     subjects_dir
         FreeSurfer SUBJECTS_DIR
     subject_id
         FreeSurfer subject ID
     fsnative2t1w_xfm
         LTA-style affine matrix translating from FreeSurfer-conformed subject space to T1w
+    white
+        FreeSurfer white matter surfaces, in T1w space, collated left, then right
+    midthickness
+        FreeSurfer mid-thickness surfaces, in T1w space, collated left, then right
+    pial
+        FreeSurfer pial surfaces, in T1w space, collated left, then right
+    sphere_reg_fsLR
+        Registration spheres from fsnative to fsLR space, collated left, then right
+    thickness
+        FreeSurfer thickness metrics, collated left, then right
+    anat_ribbon
+        Binary cortical ribbon mask in T1w space
     fmap_id
         Unique identifiers to select fieldmap files
     fmap
@@ -130,14 +142,44 @@ def init_bold_wf(
         List of fieldmap masks (collated with fmap_id)
     sdc_method
         List of fieldmap correction method names (collated with fmap_id)
+    anat2std_xfm
+        Transform from anatomical space to standard space
+    std_t1w
+        T1w reference image in standard space
+    std_mask
+        Brain (binary) mask of the standard reference image
+    std_space
+        Value of space entity to be used in standard space output filenames
+    std_resolution
+        Value of resolution entity to be used in standard space output filenames
+    std_cohort
+        Value of cohort entity to be used in standard space output filenames
+    anat2mni6_xfm
+        Transform from anatomical space to MNI152NLin6Asym space
+    mni6_mask
+        Brain (binary) mask of the MNI152NLin6Asym reference image
+    mni2009c2anat_xfm
+        Transform from MNI152NLin2009cAsym to anatomical space
+
+    Note that ``anat2std_xfm``, ``std_space``, ``std_resolution``,
+    ``std_cohort``, ``std_t1w`` and ``std_mask`` are treated as single
+    inputs. In order to resample to multiple target spaces, connect
+    these fields to an iterable.
 
     See Also
     --------
 
     * :func:`~fmriprep.workflows.bold.fit.init_bold_fit_wf`
     * :func:`~fmriprep.workflows.bold.fit.init_bold_native_wf`
+    * :func:`~fmriprep.workflows.bold.apply.init_bold_volumetric_resample_wf`
     * :func:`~fmriprep.workflows.bold.outputs.init_ds_bold_native_wf`
+    * :func:`~fmriprep.workflows.bold.outputs.init_ds_volumes_wf`
     * :func:`~fmriprep.workflows.bold.t2s.init_t2s_reporting_wf`
+    * :func:`~fmriprep.workflows.bold.resampling.init_bold_surf_wf`
+    * :func:`~fmriprep.workflows.bold.resampling.init_bold_fsLR_resampling_wf`
+    * :func:`~fmriprep.workflows.bold.resampling.init_bold_grayords_wf`
+    * :func:`~fmriprep.workflows.bold.confounds.init_bold_confs_wf`
+    * :func:`~fmriprep.workflows.bold.confounds.init_carpetplot_wf`
 
     """
     from niworkflows.engine.workflows import LiterateWorkflow as Workflow
@@ -205,8 +247,8 @@ configured with cubic B-spline interpolation.
                 "white",
                 "midthickness",
                 "pial",
-                "thickness",
                 "sphere_reg_fsLR",
+                "thickness",
                 "anat_ribbon",
                 # Fieldmap registration
                 "fmap",
@@ -217,11 +259,11 @@ configured with cubic B-spline interpolation.
                 "sdc_method",
                 # Volumetric templates
                 "anat2std_xfm",
+                "std_t1w",
+                "std_mask",
                 "std_space",
                 "std_resolution",
                 "std_cohort",
-                "std_t1w",
-                "std_mask",
                 # MNI152NLin6Asym warp, for CIFTI use
                 "anat2mni6_xfm",
                 "mni6_mask",
