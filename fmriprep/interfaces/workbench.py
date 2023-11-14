@@ -285,10 +285,10 @@ class MetricResample(WBCommand, OpenMPCommandMixin):
                     "{} was set but neither area_surfs or" " area_metrics were set".format(opt)
                 )
         if opt == "method":
-            if (
-                val == "ADAP_BARY_AREA"
-                and not self.inputs.area_surfs
-                and not self.inputs.area_metrics
+            if all(
+                val == "ADAP_BARY_AREA",
+                not self.inputs.area_surfs,
+                not self.inputs.area_metrics,
             ):
                 raise ValueError("Exactly one of area_surfs or area_metrics" " must be specified")
         if opt == "valid_roi_out" and val:

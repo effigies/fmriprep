@@ -823,12 +823,10 @@ def init_ds_volumes_wf(
         [
             (inputnode, resampler, [('ref_file', 'reference_image')])
             for resampler in resamplers
-        ]
-        + [
+        ] + [
             (boldref2target, resampler, [('out', 'transforms')])
             for resampler in resamplers
-        ]
-        + [
+        ] + [
             (inputnode, datasink, [
                 ('source_files', 'source_file'),
                 ('space', 'space'),
@@ -836,8 +834,7 @@ def init_ds_volumes_wf(
                 ('resolution', 'resolution'),
             ])
             for datasink in datasinks
-        ]
-        + [
+        ] + [
             (resampler, datasink, [("output_image", "in_file")])
             for resampler, datasink in zip(resamplers, datasinks)
         ]

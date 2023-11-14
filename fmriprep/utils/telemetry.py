@@ -110,7 +110,7 @@ def process_crashfile(crashfile):
 
         # Extract any other possible metadata in the crash file
         for k, v in crash_info.items():
-            strv = list(_chunks(str(v)))
+            strv = _chunks(str(v))
             if len(strv) == 1:
                 scope.set_extra(k, strv[0])
             else:
@@ -129,7 +129,7 @@ def process_crashfile(crashfile):
                 break
 
         message = issue_title + '\n\n'
-        message += exception_text[-(8192 - len(message)) :]
+        message += exception_text[-8192:]
         if fingerprint:
             sentry_sdk.add_breadcrumb(message=fingerprint, level='fatal')
         else:
@@ -182,7 +182,7 @@ def _chunks(string, length=CHUNK_SIZE):
     ['som', 'e l', 'ong', 'er ', 'str', 'ing', '.']
 
     """
-    return (string[i : i + length] for i in range(0, len(string), length))
+    return [string[i : i + length] for i in range(0, len(string), length)]
 
 
 def setup_migas(init_ping: bool = True) -> None:
