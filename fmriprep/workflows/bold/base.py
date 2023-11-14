@@ -29,41 +29,28 @@ Orchestrating the BOLD-preprocessing workflow
 .. autofunction:: init_bold_native_wf
 
 """
-import os
 import typing as ty
 
 import nibabel as nb
 import numpy as np
 from nipype.interfaces import utility as niu
-from nipype.interfaces.fsl import Split as FSLSplit
 from nipype.pipeline import engine as pe
-from niworkflows.utils.connections import listify, pop_file
+from niworkflows.utils.connections import listify
 
 from ... import config
 from ...interfaces import DerivativesDataSink
-from ...interfaces.reports import FunctionalSummary
-from ...utils.meepi import combine_meepi_source
 
 # BOLD workflows
 from .apply import init_bold_volumetric_resample_wf
 from .confounds import init_bold_confs_wf, init_carpetplot_wf
 from .fit import init_bold_fit_wf, init_bold_native_wf
-from .hmc import init_bold_hmc_wf
 from .outputs import (
     init_ds_bold_native_wf,
-    init_ds_registration_wf,
     init_ds_volumes_wf,
-    init_func_derivatives_wf,
     prepare_timing_parameters,
 )
-from .registration import init_bold_reg_wf, init_bold_t1_trans_wf
-from .resampling import (
-    init_bold_preproc_trans_wf,
-    init_bold_std_trans_wf,
-    init_bold_surf_wf,
-)
-from .stc import init_bold_stc_wf
-from .t2s import init_bold_t2s_wf, init_t2s_reporting_wf
+from .resampling import init_bold_surf_wf
+from .t2s import init_t2s_reporting_wf
 
 
 def init_bold_wf(
@@ -71,7 +58,6 @@ def init_bold_wf(
     bold_series: ty.List[str],
     precomputed: dict = {},
     fieldmap_id: ty.Optional[str] = None,
-    name: str = "bold_wf",
 ) -> pe.Workflow:
     """
     This workflow controls the functional preprocessing stages of *fMRIPrep*.
@@ -310,7 +296,6 @@ configured with cubic B-spline interpolation.
 
     spaces = config.workflow.spaces
     nonstd_spaces = set(spaces.get_nonstandard())
-    template_spaces = spaces.get_spaces(nonstandard=False, dim=(3,))
     freesurfer_spaces = spaces.get_fs_spaces()
 
     #
@@ -698,261 +683,6 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
     return workflow
 
 
-def init_func_preproc_wf(bold_file, has_fieldmap=False):
-    """
-    This workflow controls the functional preprocessing stages of *fMRIPrep*.
-
-    Workflow Graph
-        .. workflow::
-            :graph2use: orig
-            :simple_form: yes
-
-            from fmriprep.workflows.tests import mock_config
-            from fmriprep import config
-            from fmriprep.workflows.bold.base import init_func_preproc_wf
-            with mock_config():
-                bold_file = config.execution.bids_dir / "sub-01" / "func" \
-                    / "sub-01_task-mixedgamblestask_run-01_bold.nii.gz"
-                wf = init_func_preproc_wf(str(bold_file))
-
-    Parameters
-    ----------
-    bold_file
-        Path to NIfTI file (single echo) or list of paths to NIfTI files (multi-echo)
-    has_fieldmap : :obj:`bool`
-        Signals the workflow to use inputnode fieldmap files
-
-    Inputs
-    ------
-    bold_file
-        BOLD series NIfTI file
-    t1w_preproc
-        Bias-corrected structural template image
-    t1w_mask
-        Mask of the skull-stripped template image
-    t1w_dseg
-        Segmentation of preprocessed structural image, including
-        gray-matter (GM), white-matter (WM) and cerebrospinal fluid (CSF)
-    t1w_aseg
-        Segmentation of structural image, done with FreeSurfer.
-    t1w_aparc
-        Parcellation of structural image, done with FreeSurfer.
-    t1w_tpms
-        List of tissue probability maps in T1w space
-    template
-        List of templates to target
-    anat2std_xfm
-        List of transform files, collated with templates
-    std2anat_xfm
-        List of inverse transform files, collated with templates
-    subjects_dir
-        FreeSurfer SUBJECTS_DIR
-    subject_id
-        FreeSurfer subject ID
-    fsnative2t1w_xfm
-        LTA-style affine matrix translating from FreeSurfer-conformed subject space to T1w
-
-    Outputs
-    -------
-    bold_t1
-        BOLD series, resampled to T1w space
-    bold_t1_ref
-        BOLD reference image, resampled to T1w space
-    bold2anat_xfm
-        Affine transform from BOLD reference space to T1w space
-    anat2bold_xfm
-        Affine transform from T1w space to BOLD reference space
-    hmc_xforms
-        Affine transforms for each BOLD volume to the BOLD reference
-    bold_mask_t1
-        BOLD series mask in T1w space
-    bold_aseg_t1
-        FreeSurfer ``aseg`` resampled to match ``bold_t1``
-    bold_aparc_t1
-        FreeSurfer ``aparc+aseg`` resampled to match ``bold_t1``
-    bold_std
-        BOLD series, resampled to template space
-    bold_std_ref
-        BOLD reference image, resampled to template space
-    bold_mask_std
-        BOLD series mask in template space
-    bold_aseg_std
-        FreeSurfer ``aseg`` resampled to match ``bold_std``
-    bold_aparc_std
-        FreeSurfer ``aparc+aseg`` resampled to match ``bold_std``
-    bold_native
-        BOLD series, with distortion corrections applied (native space)
-    bold_native_ref
-        BOLD reference image in native space
-    bold_mask_native
-        BOLD series mask in native space
-    bold_echos_native
-        Per-echo BOLD series, with distortion corrections applied
-    bold_cifti
-        BOLD CIFTI image
-    cifti_metadata
-        Path of metadata files corresponding to ``bold_cifti``.
-    surfaces
-        BOLD series, resampled to FreeSurfer surfaces
-    t2star_bold
-        Estimated T2\\* map in BOLD native space
-    t2star_t1
-        Estimated T2\\* map in T1w space
-    t2star_std
-        Estimated T2\\* map in template space
-    confounds
-        TSV of confounds
-    confounds_metadata
-        Confounds metadata dictionary
-
-    See Also
-    --------
-
-    * :py:func:`~niworkflows.func.util.init_bold_reference_wf`
-    * :py:func:`~fmriprep.workflows.bold.stc.init_bold_stc_wf`
-    * :py:func:`~fmriprep.workflows.bold.hmc.init_bold_hmc_wf`
-    * :py:func:`~fmriprep.workflows.bold.t2s.init_bold_t2s_wf`
-    * :py:func:`~fmriprep.workflows.bold.t2s.init_t2s_reporting_wf`
-    * :py:func:`~fmriprep.workflows.bold.registration.init_bold_t1_trans_wf`
-    * :py:func:`~fmriprep.workflows.bold.registration.init_bold_reg_wf`
-    * :py:func:`~fmriprep.workflows.bold.confounds.init_bold_confs_wf`
-    * :py:func:`~fmriprep.workflows.bold.resampling.init_bold_std_trans_wf`
-    * :py:func:`~fmriprep.workflows.bold.resampling.init_bold_preproc_trans_wf`
-    * :py:func:`~fmriprep.workflows.bold.resampling.init_bold_surf_wf`
-    * :py:func:`~sdcflows.workflows.fmap.init_fmap_wf`
-    * :py:func:`~sdcflows.workflows.pepolar.init_pepolar_unwarp_wf`
-    * :py:func:`~sdcflows.workflows.phdiff.init_phdiff_wf`
-    * :py:func:`~sdcflows.workflows.syn.init_syn_sdc_wf`
-    * :py:func:`~sdcflows.workflows.unwarp.init_sdc_unwarp_wf`
-
-    """
-    from niworkflows.engine.workflows import LiterateWorkflow as Workflow
-    from niworkflows.func.util import init_bold_reference_wf
-    from niworkflows.interfaces.nibabel import ApplyMask
-    from niworkflows.interfaces.reportlets.registration import (
-        SimpleBeforeAfterRPT as SimpleBeforeAfter,
-    )
-    from niworkflows.interfaces.utility import KeySelect
-
-    # Have some options handy
-    omp_nthreads = config.nipype.omp_nthreads
-    freesurfer = config.workflow.run_reconall
-    spaces = config.workflow.spaces
-    fmriprep_dir = str(config.execution.fmriprep_dir)
-    freesurfer_spaces = spaces.get_fs_spaces()
-
-    ref_file = bold_file
-    wf_name = _get_wf_name(ref_file, "func_preproc")
-
-    # Build workflow
-    workflow = Workflow(name=wf_name)
-    workflow.__postdesc__ = """\
-All resamplings can be performed with *a single interpolation
-step* by composing all the pertinent transformations (i.e. head-motion
-transform matrices, susceptibility distortion correction when available,
-and co-registrations to anatomical and output spaces).
-Gridded (volumetric) resamplings were performed using `antsApplyTransforms` (ANTs),
-configured with Lanczos interpolation to minimize the smoothing
-effects of other kernels [@lanczos].
-Non-gridded (surface) resamplings were performed using `mri_vol2surf`
-(FreeSurfer).
-"""
-
-    inputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=[
-                "bold_file",
-                "subjects_dir",
-                "subject_id",
-                "t1w_preproc",
-                "t1w_mask",
-                "t1w_dseg",
-                "t1w_tpms",
-                "t1w_aseg",
-                "t1w_aparc",
-                "anat2std_xfm",
-                "std2anat_xfm",
-                "template",
-                "anat_ribbon",
-                "fsnative2t1w_xfm",
-                "surfaces",
-                "morphometrics",
-                "sphere_reg_fsLR",
-                "fmap",
-                "fmap_ref",
-                "fmap_coeff",
-                "fmap_mask",
-                "fmap_id",
-                "sdc_method",
-            ]
-        ),
-        name="inputnode",
-    )
-    inputnode.inputs.bold_file = bold_file
-
-    outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=[
-                "bold_t1",
-                "bold_t1_ref",
-                "bold2anat_xfm",
-                "anat2bold_xfm",
-                "hmc_xforms",
-                "bold_mask_t1",
-                "bold_aseg_t1",
-                "bold_aparc_t1",
-                "bold_std",
-                "bold_std_ref",
-                "bold_mask_std",
-                "bold_aseg_std",
-                "bold_aparc_std",
-                "bold_native",
-                "bold_native_ref",
-                "bold_mask_native",
-                "bold_echos_native",
-                "bold_cifti",
-                "cifti_metadata",
-                "surfaces",
-                "t2star_bold",
-                "t2star_t1",
-                "t2star_std",
-                "confounds",
-                "confounds_metadata",
-                "weights_text",
-            ]
-        ),
-        name="outputnode",
-    )
-
-    # SURFACES ##################################################################################
-
-    # CIFTI output
-
-    # REPORTING ############################################################
-    ds_report_summary = pe.Node(
-        DerivativesDataSink(desc="summary", datatype="figures", dismiss_entities=("echo",)),
-        name="ds_report_summary",
-        run_without_submitting=True,
-        mem_gb=config.DEFAULT_MEMORY_MIN_GB,
-    )
-
-    ds_report_validation = pe.Node(
-        DerivativesDataSink(desc="validation", datatype="figures", dismiss_entities=("echo",)),
-        name="ds_report_validation",
-        run_without_submitting=True,
-        mem_gb=config.DEFAULT_MEMORY_MIN_GB,
-    )
-
-    # fmt:off
-    workflow.connect([
-        (summary, ds_report_summary, [("out_report", "in_file")]),
-        (initial_boldref_wf, ds_report_validation, [("outputnode.validation_report", "in_file")]),
-    ])
-    # fmt:on
-
-    return workflow
-
-
 def _create_mem_gb(bold_fname):
     img = nb.load(bold_fname)
     nvox = int(np.prod(img.shape, dtype='u8'))
@@ -988,16 +718,6 @@ def _get_wf_name(bold_fname, prefix):
     return f'{prefix}_{fname_nosub.replace("-", "_")}_wf'
 
 
-def _to_join(in_file, join_file):
-    """Join two tsv files if the join_file is not ``None``."""
-    from niworkflows.interfaces.utility import JoinTSVColumns
-
-    if join_file is None:
-        return in_file
-    res = JoinTSVColumns(in_file=in_file, join_file=join_file).run()
-    return res.outputs.out_file
-
-
 def extract_entities(file_list):
     """
     Return a dictionary of common entities given a list of files.
@@ -1030,12 +750,6 @@ def extract_entities(file_list):
         return inlist
 
     return {k: _unique(v) for k, v in entities.items()}
-
-
-def get_img_orientation(imgf):
-    """Return the image orientation as a string"""
-    img = nb.load(imgf)
-    return "".join(nb.aff2axcodes(img.affine))
 
 
 def _read_json(in_file):
