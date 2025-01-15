@@ -45,6 +45,7 @@ from ...utils.bids import extract_entities
 from ...utils.misc import estimate_bold_mem_usage
 
 # BOLD workflows
+from .apply import init_bold_volumetric_resample_wf
 from .hmc import init_bold_hmc_wf
 from .outputs import (
     init_ds_boldmask_wf,
@@ -546,12 +547,18 @@ def init_bold_fit_wf(
             else:
                 fmapreg_buffer.inputs.boldref2fmap_xfm = boldref2fmap_xform
 
-            unwarp_wf = init_unwarp_wf(
-                free_mem=config.environment.free_mem,
-                debug='fieldmaps' in config.execution.debug,
-                omp_nthreads=config.nipype.omp_nthreads,
+            unwarp = pe.Node(
+                ResampleSeries(jacobian='fmap-jacobian' not in config.workflow.ignore),
+                name='unwarp',
+                n_procs=omp_nthreads,
+                mem_gb=mem_gb['resampled'],
             )
-            unwarp_wf.inputs.inputnode.metadata = layout.get_metadata(bold_file)
+            # unwarp_wf = init_unwarp_wf(
+            #     free_mem=config.environment.free_mem,
+            #     debug='fieldmaps' in config.execution.debug,
+            #     omp_nthreads=config.nipype.omp_nthreads,
+            # )
+            # unwarp_wf.inputs.inputnode.metadata = layout.get_metadata(bold_file)
 
             skullstrip_bold_wf = init_skullstrip_bold_wf()
 
@@ -566,7 +573,7 @@ def init_bold_fit_wf(
                 (fmap_select, unwarp_wf, [
                     ('fmap_coeff', 'inputnode.fmap_coeff'),
                 ]),
-                (fmapreg_buffer, unwarp_wf, [
+                (fmapreg_buffer, unwarp, [
                     # This looks backwards, but unwarp_wf describes transforms in
                     # terms of points while we (and init_coeff2epi_wf) describe them
                     # in terms of images. Mapping fieldmap coordinates into boldref
